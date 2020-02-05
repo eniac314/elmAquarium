@@ -33,23 +33,15 @@ update computer memory =
         if memory.loading then
             { memory
                 | agents =
-                    generateFishes computer 10 ++ generateSeahorses computer 5
+                    generateFishes computer 7
+                        ++ generateSeahorses computer 3
                 , loading = False
             }
 
         else
             { memory
                 | agents =
-                    --if memory.ticks >= 100 then
                     List.map (updateAgent computer memory) memory.agents
-
-                --    else
-                --        memory.agents
-                --, ticks =
-                --    if memory.ticks > 100 then
-                --        0
-                --    else
-                --        memory.ticks + 1
             }
 
     else
@@ -58,27 +50,38 @@ update computer memory =
 
 updateAgent : Computer -> Memory -> Agent -> Agent
 updateAgent computer memory agent =
+    let
+        agents =
+            List.foldr
+                (\a acc ->
+                    case a of
+                        BF bf ->
+                            { acc | bluefishes = bf :: acc.bluefishes }
+
+                        SH sh ->
+                            { acc | seahorses = sh :: acc.seahorses }
+
+                        SW sw ->
+                            { acc | seaweeds = sw :: acc.seaweeds }
+
+                        B b ->
+                            { acc | bubbles = b :: acc.bubbles }
+                )
+                { bluefishes = []
+                , seahorses = []
+                , seaweeds = []
+                , bubbles = []
+                }
+                memory.agents
+    in
     case agent of
         BF bluefish ->
-            let
-                bfs =
-                    List.foldr
-                        (\a acc ->
-                            case a of
-                                BF bf ->
-                                    bf :: acc
-
-                                _ ->
-                                    acc
-                        )
-                        []
-                        memory.agents
-            in
-            updateBluefish computer bfs bluefish
+            updateBluefish computer agents.bluefishes bluefish
                 |> BF
 
         SH seahorse ->
-            SH seahorse
+            updateSeahorse computer agents.seahorses seahorse
+                |> SH
 
         SW seaWeed ->
             SW seaWeed
@@ -130,14 +133,6 @@ getOrientation { velocity } =
         -1
 
 
-awarenessDistance =
-    300
-
-
-criticalDistance =
-    130
-
-
 maxAccX =
     10
 
@@ -146,70 +141,23 @@ maxAccY =
     5
 
 
-computeFlockingVector agents agent =
-    let
-        vMax =
-            100
 
-        aMax =
-            20
-
-        friction =
-            Vec2.scale (aMax * Vec2.length agent.velocity / vMax) (safeNormalize <| Vec2.negate agent.velocity)
-
-        agents_ =
-            List.filter (\ag -> ag.id /= agent.id) agents
-
-        av =
-            --Debug.log "" <|
-            computeAlignmentVector agents_ agent
-
-        sv =
-            --Debug.log "" <|
-            computeSeparationVector agents_ agent
-
-        cv =
-            --Debug.log "" <|
-            computeCohesionVector agents_ agent
-
-        goBack =
-            safeNormalize <| Vec2.negate agent.position
-
-        v0 =
-            vec2 0 0
-    in
-    if sv == v0 then
-        Vec2.scale (0.35 * vMax) goBack
-            |> Vec2.add friction
-            |> Vec2.add (Vec2.scale (0.2 * vMax) (Vec2.scale 0.5 (Vec2.add cv av)))
-
-    else
-        Vec2.scale (1.5 * vMax) sv
+--awarenessDistance =
+--    300
+--criticalDistance =
+--    130
+--computeAlignmentVector :
+--    List { a | position : Vec2, velocity : Vec2 }
+--    -> { a | position : Vec2, velocity : Vec2 }
+--    -> Vec2
 
 
-
---in if n /= 0
---then
--- if separate == (0,0,0)
--- then friction ^+^ (0.2*vMax)*^goBack2 p' p ^+^
---      (0.2*vMax)*^((avrgLoc ^+^ avrgHeading) ^/ 2)
--- else (1.5*vMax)*^separate
---else friction ^+^ (1*vMax)*^goBack2 p' p
-
-
-computeAlignmentVector :
-    List { a | position : Vec2, velocity : Vec2 }
-    -> { a | position : Vec2, velocity : Vec2 }
-    -> Vec2
-computeAlignmentVector agents agent =
-    --avrgHeading =
-    --  let (vx,vy,vz) = foldl' (\a o -> vel o ^+^ a) (0,0,0) env'
-    --  in safeNormalize $ (vx,vy,vz)^/n
+computeAlignmentVector config agents agent =
     let
         neighbours =
-            agents
+            --agents
+            List.filter (\a -> Vec2.distance a.position agent.position <= config.awarenessDistance) agents
 
-        --List.filter (\a -> Vec2.distance a.position agent.position <= awarenessDistance) agents
         neighboursCount =
             toFloat <| List.length neighbours
     in
@@ -223,12 +171,15 @@ computeAlignmentVector agents agent =
             |> safeNormalize
 
 
-computeSeparationVector : List { a | position : Vec2 } -> { a | position : Vec2 } -> Vec2
-computeSeparationVector agents agent =
+
+--computeSeparationVector : List { a | position : Vec2 } -> { a | position : Vec2 } -> Vec2
+
+
+computeSeparationVector config agents agent =
     let
         neighbours =
             --agents
-            List.filter (\a -> Vec2.distance a.position agent.position <= criticalDistance) agents
+            List.filter (\a -> Vec2.distance a.position agent.position <= config.criticalDistance) agents
 
         neighboursCount =
             toFloat <| List.length neighbours
@@ -237,13 +188,6 @@ computeSeparationVector agents agent =
         vec2 0 0
 
     else
-        --  separate =
-        --let subSet = filter (\o -> fishMinDist >= norm (pos o ^-^ p)) env
-        --    n = fromIntegral . length $ subSet
-        --    getVec o = norm (pos o ^-^ p) *^ safeNormalize (p ^-^ pos o)
-        --    dm = map (\o -> getVec o) subSet
-        --    (dx,dy,dz) = foldl' (^+^) (0,0,0) dm
-        --in if n /= 0 then safeNormalize  $ (dx,dy,dz)^/n else nullVec
         neighbours
             |> List.foldr
                 (\a acc ->
@@ -261,16 +205,14 @@ computeSeparationVector agents agent =
             |> safeNormalize
 
 
-computeCohesionVector : List { a | position : Vec2 } -> { a | position : Vec2 } -> Vec2
-computeCohesionVector agents agent =
-    --avrgLoc =
-    --  let (x,y,z) = foldl' (\a o -> pos o ^+^ a) (0,0,0) env'
-    --      (u,v,w) = ((x,y,z)^/n) ^-^ p
-    --  in  safeNormalize $ (u/maxAccX,v/maxAccY,w)
+
+--computeCohesionVector : List { a | position : Vec2 } -> { a | position : Vec2 } -> Vec2
+
+
+computeCohesionVector config agents agent =
     let
         neighbours =
-            --List.filter (\a -> Vec2.distance a.position agent.position <= awarenessDistance) agents
-            agents
+            List.filter (\a -> Vec2.distance a.position agent.position <= config.awarenessDistance) agents
 
         neighboursCount =
             toFloat <| List.length neighbours
@@ -294,6 +236,41 @@ safeNormalize v =
 
     else
         normalize v
+
+
+computeFlockingVector config agents agent =
+    let
+        agents_ =
+            List.filter (\ag -> ag.id /= agent.id) agents
+
+        av =
+            --Debug.log "" <|
+            computeAlignmentVector config agents_ agent
+
+        sv =
+            --Debug.log "" <|
+            computeSeparationVector config agents_ agent
+
+        cv =
+            --Debug.log "" <|
+            computeCohesionVector config agents_ agent
+
+        goBack =
+            Vec2.sub agent.position config.origin
+                |> Vec2.negate
+                |> safeNormalize
+
+        v0 =
+            vec2 0 0
+    in
+    if config.mustGoBack then
+        goBack
+
+    else if sv == v0 then
+        Vec2.scale 0.2 (Vec2.scale 1 (Vec2.add cv av))
+
+    else
+        Vec2.scale 1.5 sv
 
 
 
@@ -374,21 +351,46 @@ generateFishes computer nbrFish =
 
 updateBluefish computer bfs bf =
     let
+        mustGoBack =
+            let
+                ( posX, posY ) =
+                    ( Vec2.getX bf.position, Vec2.getY bf.position )
+            in
+            (posX < computer.screen.left + 150)
+                || (posX > computer.screen.right - 150)
+                || (posY < computer.screen.bottom + 150)
+                || (posY > computer.screen.top - 150)
+
+        config =
+            { mustGoBack = mustGoBack
+            , origin = vec2 0 0
+            , awarenessDistance = 300
+            , criticalDistance = 130
+            }
+
         acceleration =
-            Vec2.scale 0.001 (computeFlockingVector bfs bf)
+            Vec2.scale 0.1 (computeFlockingVector config bfs bf)
 
         velocity =
             let
+                nextVel =
+                    Vec2.add acceleration bf.velocity
+
+                friction =
+                    if Vec2.length nextVel > Vec2.length vMax then
+                        Vec2.negate nextVel
+                            |> safeNormalize
+                            |> Vec2.scale (10 / Vec2.length bf.position)
+
+                    else
+                        vec2 0 0
+
                 vMax =
                     Vec2.add acceleration bf.velocity
                         |> safeNormalize
-                        |> Vec2.scale 4.5
+                        |> Vec2.scale 2
             in
-            if Vec2.length (Vec2.add acceleration bf.velocity) > Vec2.length vMax then
-                vMax
-
-            else
-                Vec2.add acceleration bf.velocity
+            Vec2.add nextVel friction
 
         position =
             Vec2.add bf.position velocity
@@ -411,8 +413,21 @@ updateBluefish computer bfs bf =
             else
                 ( bf.currentSpriteIndex, bf.prevSpriteChangeTime )
 
+        accValue =
+            Vec2.length acceleration
+
         spriteDuration =
-            round <| 1000 - min 750 (Vec2.length acceleration * 2000)
+            if accValue < 0.01 then
+                1000
+
+            else if accValue < 0.05 then
+                500
+
+            else if accValue < 0.1 then
+                100
+
+            else
+                50
     in
     { bf
         | velocity = velocity
@@ -431,14 +446,6 @@ drawBluefish bf =
         |> moveX (getX bf.position)
         |> moveY (getY bf.position)
     )
-
-
-
---|> (toPolar ( getX bf.acceleration, getY bf.acceleration )
---        |> Tuple.second
---        |> (\r -> 360 * r / 2 * pi)
---        |> rotate
---   )
 
 
 fishsprite index orientation =
@@ -482,8 +489,8 @@ generateSeahorses computer nbrSeaHorses =
 
         randPosGen =
             Random.pair
-                (Random.float (computer.screen.right - 200) computer.screen.right)
-                (Random.float computer.screen.bottom (computer.screen.bottom + 200))
+                (Random.float (computer.screen.right - 300) (computer.screen.right - 50))
+                (Random.float (computer.screen.bottom + 50) (computer.screen.bottom + 275))
 
         randVelGen =
             Random.pair
@@ -515,38 +522,62 @@ generateSeahorses computer nbrSeaHorses =
         |> List.map SH
 
 
-updateSeahorse computer bfs bf =
+updateSeahorse computer shs sh =
     let
+        mustGoBack =
+            let
+                ( posX, posY ) =
+                    ( Vec2.getX sh.position, Vec2.getY sh.position )
+            in
+            (posX < computer.screen.right - 350)
+                || (posX > computer.screen.right - 25)
+                || (posY < computer.screen.bottom + 200)
+                || (posY > computer.screen.bottom + 300)
+
+        origin =
+            vec2 (computer.screen.right - 100) (computer.screen.bottom + 250)
+
+        config =
+            { mustGoBack = mustGoBack
+            , origin = origin
+            , awarenessDistance = 300
+            , criticalDistance = 100
+            }
+
         acceleration =
-            computeFlockingVector bfs bf
+            Vec2.scale 0.015 (computeFlockingVector config shs sh)
 
         velocity =
             let
                 nextVel =
-                    Vec2.add bf.acceleration bf.velocity
-            in
-            if Vec2.length nextVel > 0 then
-                let
-                    friction =
-                        nextVel
-                            |> Vec2.scale 0.01
-                            |> Vec2.negate
-                in
-                Vec2.add (Vec2.add bf.acceleration bf.velocity) friction
+                    Vec2.add acceleration sh.velocity
 
-            else
-                nextVel
+                friction =
+                    if Vec2.length nextVel > Vec2.length vMax then
+                        Vec2.negate nextVel
+                            --|> safeNormalize
+                            |> Vec2.scale 0.8
+
+                    else
+                        vec2 0 0
+
+                vMax =
+                    Vec2.add acceleration sh.velocity
+                        |> safeNormalize
+                        |> Vec2.scale 2
+            in
+            Vec2.add nextVel friction
 
         position =
-            Vec2.add bf.position velocity
+            Vec2.add sh.position velocity
 
         ( currentSpriteIndex, prevSpriteChangeTime ) =
-            if Vec2.length bf.acceleration == 0 then
-                ( bf.currentSpriteIndex, bf.prevSpriteChangeTime )
+            if Vec2.length acceleration == 0 then
+                ( sh.currentSpriteIndex, sh.prevSpriteChangeTime )
 
-            else if (now computer.time - bf.prevSpriteChangeTime) > bf.spriteDuration then
-                ( bf.currentSpriteIndex
-                    + (if getX bf.acceleration > 0 then
+            else if (now computer.time - sh.prevSpriteChangeTime) > sh.spriteDuration then
+                ( sh.currentSpriteIndex
+                    + (if getX sh.acceleration > 0 then
                         1
 
                        else
@@ -556,12 +587,25 @@ updateSeahorse computer bfs bf =
                 )
 
             else
-                ( bf.currentSpriteIndex, bf.prevSpriteChangeTime )
+                ( sh.currentSpriteIndex, sh.prevSpriteChangeTime )
+
+        accValue =
+            Vec2.length acceleration
 
         spriteDuration =
-            round <| 1000 - min 750 (Vec2.length bf.acceleration * 20000)
+            if accValue < 0.01 then
+                1000
+
+            else if accValue < 0.05 then
+                500
+
+            else if accValue < 0.1 then
+                100
+
+            else
+                50
     in
-    { bf
+    { sh
         | velocity = velocity
         , position = position
         , acceleration = acceleration
@@ -582,7 +626,7 @@ drawSeahorse sh =
 
 seahorseSprite index orientation =
     (sprite 60 96 "/images/SeahorseSheet.png" <|
-        vec4 (toFloat (modBy 4 index) / 4) 0 0.25 0.5
+        vec4 (toFloat (modBy 4 index) / 4) 0.5 0.25 0.5
     )
         |> scaleX orientation
 
@@ -596,6 +640,10 @@ type alias SeaWeed =
     , position : Vec2
     , currentSpriteIndex : Int
     }
+
+
+
+-------------------------------------------------------------------------------
 
 
 type alias Bubble =
