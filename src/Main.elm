@@ -23,6 +23,13 @@ init =
     }
 
 
+type Agent
+    = BF BlueFish
+    | SH Seahorse
+    | SW Seaweed
+    | SS SeaShell
+
+
 main =
     game view update init
 
@@ -33,8 +40,10 @@ update computer memory =
         if memory.loading then
             { memory
                 | agents =
-                    generateFishes computer 7
+                    generateFishes computer 10
                         ++ generateSeahorses computer 3
+                        ++ generateSeaweed computer 7
+                        ++ [ generateSeashell computer ]
                 , loading = False
             }
 
@@ -64,13 +73,13 @@ updateAgent computer memory agent =
                         SW sw ->
                             { acc | seaweeds = sw :: acc.seaweeds }
 
-                        B b ->
-                            { acc | bubbles = b :: acc.bubbles }
+                        SS ss ->
+                            { acc | seashells = ss :: acc.seashells }
                 )
                 { bluefishes = []
                 , seahorses = []
                 , seaweeds = []
-                , bubbles = []
+                , seashells = []
                 }
                 memory.agents
     in
@@ -83,11 +92,13 @@ updateAgent computer memory agent =
             updateSeahorse computer agents.seahorses seahorse
                 |> SH
 
-        SW seaWeed ->
-            SW seaWeed
+        SW seaweed ->
+            updateSeaweed computer seaweed
+                |> SW
 
-        B bubble ->
-            B bubble
+        SS seashell ->
+            updateSeashell computer seashell
+                |> SS
 
 
 view computer memory =
@@ -106,11 +117,12 @@ drawAgent agent =
         SH seahorse ->
             drawSeahorse seahorse
 
-        SW seaWeed ->
-            ( 0, circle red 0 )
+        SW seaweed ->
+            drawSeaweed seaweed
 
-        B bubble ->
-            ( 0, circle red 0 )
+        SS seashell ->
+            --( 1, circle red   0 )
+            drawSeashell seashell
 
 
 statics computer =
@@ -141,17 +153,6 @@ maxAccY =
     5
 
 
-
---awarenessDistance =
---    300
---criticalDistance =
---    130
---computeAlignmentVector :
---    List { a | position : Vec2, velocity : Vec2 }
---    -> { a | position : Vec2, velocity : Vec2 }
---    -> Vec2
-
-
 computeAlignmentVector config agents agent =
     let
         neighbours =
@@ -169,10 +170,6 @@ computeAlignmentVector config agents agent =
             |> List.foldr (\a acc -> Vec2.add a.velocity acc) (vec2 0 0)
             |> Vec2.scale (1 / neighboursCount)
             |> safeNormalize
-
-
-
---computeSeparationVector : List { a | position : Vec2 } -> { a | position : Vec2 } -> Vec2
 
 
 computeSeparationVector config agents agent =
@@ -276,13 +273,6 @@ computeFlockingVector config agents agent =
 
 -------------------------------------------------------------------------------
 -- { bluefish }
-
-
-type Agent
-    = BF BlueFish
-    | SH Seahorse
-    | SW SeaWeed
-    | B Bubble
 
 
 type alias BlueFish =
@@ -511,10 +501,10 @@ generateSeahorses computer nbrSeaHorses =
     List.foldr
         (\id ( res, seed ) ->
             let
-                ( newFish, newSeed ) =
+                ( newSeahorse, newSeed ) =
                     Random.step (randSeahorseGen id) seed
             in
-            ( newFish :: res, newSeed )
+            ( newSeahorse :: res, newSeed )
         )
         ( [], initSeed )
         (List.range 1 nbrSeaHorses)
@@ -635,22 +625,227 @@ seahorseSprite index orientation =
 -------------------------------------------------------------------------------
 
 
-type alias SeaWeed =
+type alias Seaweed =
     { id : Int
     , position : Vec2
     , currentSpriteIndex : Int
+    , prevSpriteChangeTime : Int
+    , spriteDuration : Int
     }
+
+
+generateSeaweed computer nbrSeaweeds =
+    let
+        initSeed =
+            Random.initialSeed (now computer.time)
+
+        randPosGen =
+            Random.pair
+                (Random.float (computer.screen.left + 50) (computer.screen.right - 550))
+                (Random.float (computer.screen.bottom + 80) (computer.screen.bottom + 130))
+
+        randSpriteDuration =
+            Random.int 750 2000
+
+        randSeaweed id =
+            Random.map2
+                (\( posX, posY ) dur ->
+                    { position = vec2 posX posY
+                    , id = id
+                    , currentSpriteIndex = 0
+                    , prevSpriteChangeTime = 0
+                    , spriteDuration = dur
+                    }
+                )
+                randPosGen
+                randSpriteDuration
+    in
+    List.foldr
+        (\id ( res, seed ) ->
+            let
+                ( newSeaweed, newSeed ) =
+                    Random.step (randSeaweed id) seed
+            in
+            ( newSeaweed :: res, newSeed )
+        )
+        ( [], initSeed )
+        (List.range 1 nbrSeaweeds)
+        |> Tuple.first
+        |> List.map SW
+
+
+updateSeaweed computer sw =
+    let
+        ( currentSpriteIndex, prevSpriteChangeTime ) =
+            if (now computer.time - sw.prevSpriteChangeTime) > sw.spriteDuration then
+                ( sw.currentSpriteIndex + 1, now computer.time )
+
+            else
+                ( sw.currentSpriteIndex, sw.prevSpriteChangeTime )
+    in
+    { sw
+        | currentSpriteIndex = currentSpriteIndex
+        , prevSpriteChangeTime = prevSpriteChangeTime
+    }
+
+
+drawSeaweed : Seaweed -> ( Int, Shape )
+drawSeaweed sw =
+    ( 4
+    , seaweedSprite sw.currentSpriteIndex
+        |> moveX (getX sw.position)
+        |> moveY (getY sw.position)
+    )
+
+
+seaweedSprite index =
+    sprite 171 185 "/images/SeaweedNew.png" <|
+        vec4 (toFloat (modBy 4 index) / 4) 0 0.25 1
 
 
 
 -------------------------------------------------------------------------------
 
 
-type alias Bubble =
+type alias SeaShell =
     { id : Int
     , position : Vec2
-    , velocity : Vec2
+    , bubbles : List Bubble
     , currentSpriteIndex : Int
-    , spriteDuration : Int
     , prevSpriteChangeTime : Int
+    , prevBubbleCreationTime : Int
+    , intervalUntilNextBubbleGeneration : Int
+    , isOpen : Bool
     }
+
+
+type alias Bubble =
+    { position : Vec2
+    , spriteIndex : Int
+    }
+
+
+generateSeashell computer =
+    { id = 0
+    , position = vec2 (computer.screen.right - 600) (computer.screen.bottom + 115)
+    , bubbles = []
+    , currentSpriteIndex = 0
+    , prevSpriteChangeTime = 0
+    , prevBubbleCreationTime = 0
+    , intervalUntilNextBubbleGeneration = 0
+    , isOpen = False
+    }
+        |> SS
+
+
+updateSeashell computer ss =
+    let
+        seed =
+            Random.initialSeed (now computer.time)
+
+        isOpen =
+            if
+                computer.mouse.click
+                    && (computer.mouse.x > Vec2.getX ss.position - (164 / 2))
+                    && (computer.mouse.x < Vec2.getX ss.position + (164 / 2))
+                    && (computer.mouse.y > Vec2.getY ss.position - (105 / 2))
+                    && (computer.mouse.y < Vec2.getY ss.position + (105 / 2))
+            then
+                not ss.isOpen
+
+            else
+                ss.isOpen
+
+        canGenerateNewBubble =
+            ss.isOpen && (ss.prevBubbleCreationTime + ss.intervalUntilNextBubbleGeneration < now computer.time)
+
+        ( prevBubbleCreationTime, intervalUntilNextBubbleGeneration ) =
+            if canGenerateNewBubble then
+                ( now computer.time
+                , Random.step (Random.int 150 300) seed
+                    |> Tuple.first
+                )
+
+            else
+                ( ss.prevBubbleCreationTime, ss.intervalUntilNextBubbleGeneration )
+
+        newBubble =
+            if canGenerateNewBubble then
+                let
+                    ( ( newPosX, size ), _ ) =
+                        Random.step
+                            (Random.pair (Random.float 30 130) (Random.int 0 1))
+                            seed
+                in
+                [ { position = vec2 newPosX (getY ss.position + 20)
+                  , spriteIndex = size
+                  }
+                ]
+
+            else
+                []
+
+        bubbles =
+            newBubble
+                ++ (List.map (updateBubble computer) ss.bubbles
+                        |> List.filter (\b -> Vec2.getY b.position < computer.screen.top)
+                   )
+
+        ( currentSpriteIndex, prevSpriteChangeTime ) =
+            if (now computer.time - ss.prevSpriteChangeTime) > 400 then
+                if ss.isOpen then
+                    if ss.currentSpriteIndex /= 2 then
+                        ( ss.currentSpriteIndex + 1, now computer.time )
+
+                    else
+                        ( ss.currentSpriteIndex, ss.prevSpriteChangeTime )
+
+                else if ss.currentSpriteIndex /= 0 then
+                    ( ss.currentSpriteIndex - 1, now computer.time )
+
+                else
+                    ( ss.currentSpriteIndex, ss.prevSpriteChangeTime )
+
+            else
+                ( ss.currentSpriteIndex, ss.prevSpriteChangeTime )
+    in
+    { ss
+        | bubbles = bubbles
+        , prevBubbleCreationTime = prevBubbleCreationTime
+        , intervalUntilNextBubbleGeneration = intervalUntilNextBubbleGeneration
+        , currentSpriteIndex = currentSpriteIndex
+        , prevSpriteChangeTime = prevSpriteChangeTime
+        , isOpen = isOpen
+    }
+
+
+updateBubble computer b =
+    { b | position = Vec2.add (vec2 0 (10 * ((toFloat <| delta computer.time) / 100))) b.position }
+
+
+drawSeashell : SeaShell -> ( Int, Shape )
+drawSeashell ss =
+    ( 1
+    , (seashellSprite ss.currentSpriteIndex
+        |> moveX (getX ss.position)
+        |> moveY (getY ss.position)
+      )
+        :: List.map drawBubble ss.bubbles
+        |> group
+    )
+
+
+seashellSprite index =
+    sprite 164 105 "/images/Seashell.png" <|
+        vec4 (toFloat (modBy 3 index) / 3) 0 0.33 1
+
+
+drawBubble b =
+    bubbleSprite b.spriteIndex
+        |> moveX (getX b.position)
+        |> moveY (getY b.position)
+
+
+bubbleSprite index =
+    sprite 114 114 "/images/Bubbles.png" <|
+        vec4 (toFloat (modBy 3 index) / 3) 0 0.33 1

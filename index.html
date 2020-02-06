@@ -8926,21 +8926,115 @@ var $author$project$Main$generateSeahorses = F2(
 							$elm$random$Random$step,
 							randSeahorseGen(id),
 							seed);
-						var newFish = _v1.a;
+						var newSeahorse = _v1.a;
 						var newSeed = _v1.b;
 						return _Utils_Tuple2(
-							A2($elm$core$List$cons, newFish, res),
+							A2($elm$core$List$cons, newSeahorse, res),
 							newSeed);
 					}),
 				_Utils_Tuple2(_List_Nil, initSeed),
 				A2($elm$core$List$range, 1, nbrSeaHorses)).a);
 	});
-var $author$project$Main$B = function (a) {
-	return {$: 'B', a: a};
+var $author$project$Main$SS = function (a) {
+	return {$: 'SS', a: a};
+};
+var $author$project$Main$generateSeashell = function (computer) {
+	return $author$project$Main$SS(
+		{
+			bubbles: _List_Nil,
+			currentSpriteIndex: 0,
+			id: 0,
+			intervalUntilNextBubbleGeneration: 0,
+			isOpen: false,
+			position: A2($elm_explorations$linear_algebra$Math$Vector2$vec2, computer.screen.right - 600, computer.screen.bottom + 115),
+			prevBubbleCreationTime: 0,
+			prevSpriteChangeTime: 0
+		});
 };
 var $author$project$Main$SW = function (a) {
 	return {$: 'SW', a: a};
 };
+var $elm$random$Random$int = F2(
+	function (a, b) {
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var _v0 = (_Utils_cmp(a, b) < 0) ? _Utils_Tuple2(a, b) : _Utils_Tuple2(b, a);
+				var lo = _v0.a;
+				var hi = _v0.b;
+				var range = (hi - lo) + 1;
+				if (!((range - 1) & range)) {
+					return _Utils_Tuple2(
+						(((range - 1) & $elm$random$Random$peel(seed0)) >>> 0) + lo,
+						$elm$random$Random$next(seed0));
+				} else {
+					var threshhold = (((-range) >>> 0) % range) >>> 0;
+					var accountForBias = function (seed) {
+						accountForBias:
+						while (true) {
+							var x = $elm$random$Random$peel(seed);
+							var seedN = $elm$random$Random$next(seed);
+							if (_Utils_cmp(x, threshhold) < 0) {
+								var $temp$seed = seedN;
+								seed = $temp$seed;
+								continue accountForBias;
+							} else {
+								return _Utils_Tuple2((x % range) + lo, seedN);
+							}
+						}
+					};
+					return accountForBias(seed0);
+				}
+			});
+	});
+var $author$project$Main$generateSeaweed = F2(
+	function (computer, nbrSeaweeds) {
+		var randSpriteDuration = A2($elm$random$Random$int, 750, 2000);
+		var randPosGen = A2(
+			$elm$random$Random$pair,
+			A2($elm$random$Random$float, computer.screen.left + 50, computer.screen.right - 550),
+			A2($elm$random$Random$float, computer.screen.bottom + 80, computer.screen.bottom + 130));
+		var randSeaweed = function (id) {
+			return A3(
+				$elm$random$Random$map2,
+				F2(
+					function (_v2, dur) {
+						var posX = _v2.a;
+						var posY = _v2.b;
+						return {
+							currentSpriteIndex: 0,
+							id: id,
+							position: A2($elm_explorations$linear_algebra$Math$Vector2$vec2, posX, posY),
+							prevSpriteChangeTime: 0,
+							spriteDuration: dur
+						};
+					}),
+				randPosGen,
+				randSpriteDuration);
+		};
+		var initSeed = $elm$random$Random$initialSeed(
+			$justgook$webgl_playground$Playground$now(computer.time));
+		return A2(
+			$elm$core$List$map,
+			$author$project$Main$SW,
+			A3(
+				$elm$core$List$foldr,
+				F2(
+					function (id, _v0) {
+						var res = _v0.a;
+						var seed = _v0.b;
+						var _v1 = A2(
+							$elm$random$Random$step,
+							randSeaweed(id),
+							seed);
+						var newSeaweed = _v1.a;
+						var newSeed = _v1.b;
+						return _Utils_Tuple2(
+							A2($elm$core$List$cons, newSeaweed, res),
+							newSeed);
+					}),
+				_Utils_Tuple2(_List_Nil, initSeed),
+				A2($elm$core$List$range, 1, nbrSeaweeds)).a);
+	});
 var $elm_explorations$linear_algebra$Math$Vector2$add = _MJS_v2add;
 var $elm_explorations$linear_algebra$Math$Vector2$distance = _MJS_v2distance;
 var $elm$core$List$filter = F2(
@@ -9175,6 +9269,112 @@ var $author$project$Main$updateSeahorse = F3(
 			sh,
 			{acceleration: acceleration, currentSpriteIndex: currentSpriteIndex, position: position, prevSpriteChangeTime: prevSpriteChangeTime, spriteDuration: spriteDuration, velocity: velocity});
 	});
+var $elm$core$Basics$not = _Basics_not;
+var $justgook$webgl_playground$Playground$delta = function (_v0) {
+	var d = _v0.b;
+	return d;
+};
+var $author$project$Main$updateBubble = F2(
+	function (computer, b) {
+		return _Utils_update(
+			b,
+			{
+				position: A2(
+					$elm_explorations$linear_algebra$Math$Vector2$add,
+					A2(
+						$elm_explorations$linear_algebra$Math$Vector2$vec2,
+						0,
+						10 * ($justgook$webgl_playground$Playground$delta(computer.time) / 100)),
+					b.position)
+			});
+	});
+var $author$project$Main$updateSeashell = F2(
+	function (computer, ss) {
+		var seed = $elm$random$Random$initialSeed(
+			$justgook$webgl_playground$Playground$now(computer.time));
+		var isOpen = (computer.mouse.click && ((_Utils_cmp(
+			computer.mouse.x,
+			$elm_explorations$linear_algebra$Math$Vector2$getX(ss.position) - (164 / 2)) > 0) && ((_Utils_cmp(
+			computer.mouse.x,
+			$elm_explorations$linear_algebra$Math$Vector2$getX(ss.position) + (164 / 2)) < 0) && ((_Utils_cmp(
+			computer.mouse.y,
+			$elm_explorations$linear_algebra$Math$Vector2$getY(ss.position) - (105 / 2)) > 0) && (_Utils_cmp(
+			computer.mouse.y,
+			$elm_explorations$linear_algebra$Math$Vector2$getY(ss.position) + (105 / 2)) < 0))))) ? (!ss.isOpen) : ss.isOpen;
+		var canGenerateNewBubble = ss.isOpen && (_Utils_cmp(
+			ss.prevBubbleCreationTime + ss.intervalUntilNextBubbleGeneration,
+			$justgook$webgl_playground$Playground$now(computer.time)) < 0);
+		var newBubble = function () {
+			if (canGenerateNewBubble) {
+				var _v2 = A2(
+					$elm$random$Random$step,
+					A2(
+						$elm$random$Random$pair,
+						A2($elm$random$Random$float, 30, 130),
+						A2($elm$random$Random$int, 0, 1)),
+					seed);
+				var _v3 = _v2.a;
+				var newPosX = _v3.a;
+				var size = _v3.b;
+				return _List_fromArray(
+					[
+						{
+						position: A2(
+							$elm_explorations$linear_algebra$Math$Vector2$vec2,
+							newPosX,
+							$elm_explorations$linear_algebra$Math$Vector2$getY(ss.position) + 20),
+						spriteIndex: size
+					}
+					]);
+			} else {
+				return _List_Nil;
+			}
+		}();
+		var bubbles = _Utils_ap(
+			newBubble,
+			A2(
+				$elm$core$List$filter,
+				function (b) {
+					return _Utils_cmp(
+						$elm_explorations$linear_algebra$Math$Vector2$getY(b.position),
+						computer.screen.top) < 0;
+				},
+				A2(
+					$elm$core$List$map,
+					$author$project$Main$updateBubble(computer),
+					ss.bubbles)));
+		var _v0 = (($justgook$webgl_playground$Playground$now(computer.time) - ss.prevSpriteChangeTime) > 400) ? (ss.isOpen ? ((ss.currentSpriteIndex !== 2) ? _Utils_Tuple2(
+			ss.currentSpriteIndex + 1,
+			$justgook$webgl_playground$Playground$now(computer.time)) : _Utils_Tuple2(ss.currentSpriteIndex, ss.prevSpriteChangeTime)) : ((!(!ss.currentSpriteIndex)) ? _Utils_Tuple2(
+			ss.currentSpriteIndex - 1,
+			$justgook$webgl_playground$Playground$now(computer.time)) : _Utils_Tuple2(ss.currentSpriteIndex, ss.prevSpriteChangeTime))) : _Utils_Tuple2(ss.currentSpriteIndex, ss.prevSpriteChangeTime);
+		var currentSpriteIndex = _v0.a;
+		var prevSpriteChangeTime = _v0.b;
+		var _v1 = canGenerateNewBubble ? _Utils_Tuple2(
+			$justgook$webgl_playground$Playground$now(computer.time),
+			A2(
+				$elm$random$Random$step,
+				A2($elm$random$Random$int, 150, 300),
+				seed).a) : _Utils_Tuple2(ss.prevBubbleCreationTime, ss.intervalUntilNextBubbleGeneration);
+		var prevBubbleCreationTime = _v1.a;
+		var intervalUntilNextBubbleGeneration = _v1.b;
+		return _Utils_update(
+			ss,
+			{bubbles: bubbles, currentSpriteIndex: currentSpriteIndex, intervalUntilNextBubbleGeneration: intervalUntilNextBubbleGeneration, isOpen: isOpen, prevBubbleCreationTime: prevBubbleCreationTime, prevSpriteChangeTime: prevSpriteChangeTime});
+	});
+var $author$project$Main$updateSeaweed = F2(
+	function (computer, sw) {
+		var _v0 = (_Utils_cmp(
+			$justgook$webgl_playground$Playground$now(computer.time) - sw.prevSpriteChangeTime,
+			sw.spriteDuration) > 0) ? _Utils_Tuple2(
+			sw.currentSpriteIndex + 1,
+			$justgook$webgl_playground$Playground$now(computer.time)) : _Utils_Tuple2(sw.currentSpriteIndex, sw.prevSpriteChangeTime);
+		var currentSpriteIndex = _v0.a;
+		var prevSpriteChangeTime = _v0.b;
+		return _Utils_update(
+			sw,
+			{currentSpriteIndex: currentSpriteIndex, prevSpriteChangeTime: prevSpriteChangeTime});
+	});
 var $author$project$Main$updateAgent = F3(
 	function (computer, memory, agent) {
 		var agents = A3(
@@ -9204,15 +9404,15 @@ var $author$project$Main$updateAgent = F3(
 									seaweeds: A2($elm$core$List$cons, sw, acc.seaweeds)
 								});
 						default:
-							var b = a.a;
+							var ss = a.a;
 							return _Utils_update(
 								acc,
 								{
-									bubbles: A2($elm$core$List$cons, b, acc.bubbles)
+									seashells: A2($elm$core$List$cons, ss, acc.seashells)
 								});
 					}
 				}),
-			{bluefishes: _List_Nil, bubbles: _List_Nil, seahorses: _List_Nil, seaweeds: _List_Nil},
+			{bluefishes: _List_Nil, seahorses: _List_Nil, seashells: _List_Nil, seaweeds: _List_Nil},
 			memory.agents);
 		switch (agent.$) {
 			case 'BF':
@@ -9224,11 +9424,13 @@ var $author$project$Main$updateAgent = F3(
 				return $author$project$Main$SH(
 					A3($author$project$Main$updateSeahorse, computer, agents.seahorses, seahorse));
 			case 'SW':
-				var seaWeed = agent.a;
-				return $author$project$Main$SW(seaWeed);
+				var seaweed = agent.a;
+				return $author$project$Main$SW(
+					A2($author$project$Main$updateSeaweed, computer, seaweed));
 			default:
-				var bubble = agent.a;
-				return $author$project$Main$B(bubble);
+				var seashell = agent.a;
+				return $author$project$Main$SS(
+					A2($author$project$Main$updateSeashell, computer, seashell));
 		}
 	});
 var $author$project$Main$update = F2(
@@ -9237,8 +9439,15 @@ var $author$project$Main$update = F2(
 			memory,
 			{
 				agents: _Utils_ap(
-					A2($author$project$Main$generateFishes, computer, 7),
-					A2($author$project$Main$generateSeahorses, computer, 3)),
+					A2($author$project$Main$generateFishes, computer, 10),
+					_Utils_ap(
+						A2($author$project$Main$generateSeahorses, computer, 3),
+						_Utils_ap(
+							A2($author$project$Main$generateSeaweed, computer, 7),
+							_List_fromArray(
+								[
+									$author$project$Main$generateSeashell(computer)
+								])))),
 				loading: false
 			}) : _Utils_update(
 			memory,
@@ -9251,12 +9460,42 @@ var $author$project$Main$update = F2(
 			memory,
 			{firstTick: true});
 	});
+var $elm$core$Basics$modBy = _Basics_modBy;
+var $justgook$webgl_playground$Playground$Internal$Shape = function (a) {
+	return {$: 'Shape', a: a};
+};
+var $justgook$webgl_playground$Playground$Extra$scaleX = F2(
+	function (sx, _v0) {
+		var shape = _v0.a;
+		return $justgook$webgl_playground$Playground$Internal$Shape(
+			_Utils_update(
+				shape,
+				{sx: shape.sx * sx}));
+	});
 var $justgook$webgl_playground$Playground$Internal$Form = F3(
 	function (a, b, c) {
 		return {$: 'Form', a: a, b: b, c: c};
 	});
-var $justgook$webgl_playground$Playground$Internal$Shape = function (a) {
-	return {$: 'Shape', a: a};
+var $justgook$webgl_playground$Playground$Advanced$custom = F3(
+	function (width, height, render) {
+		return $justgook$webgl_playground$Playground$Internal$Shape(
+			{
+				a: 0,
+				form: A3($justgook$webgl_playground$Playground$Internal$Form, width, height, render),
+				o: 1,
+				sx: 1,
+				sy: 1,
+				x: 0,
+				y: 0
+			});
+	});
+var $justgook$webgl_playground$Playground$Extra$size = function (t) {
+	return function (_v0) {
+		var w = _v0.a;
+		var h = _v0.b;
+		return A2($elm_explorations$linear_algebra$Math$Vector2$vec2, w, h);
+	}(
+		$elm_explorations$webgl$WebGL$Texture$size(t));
 };
 var $elm_explorations$webgl$WebGL$Internal$Blend = function (a) {
 	return function (b) {
@@ -9336,10 +9575,10 @@ var $justgook$webgl_playground$Playground$Render$defaultEntitySettings = _List_f
 		A4($elm_explorations$webgl$WebGL$Settings$colorMask, true, true, true, false)
 	]);
 var $elm_explorations$webgl$WebGL$entityWith = _WebGL_entity;
-var $justgook$webgl_playground$Playground$Shader$fragCircle = {
-	src: '\n        precision mediump float;\n        uniform vec4 color;\n        varying vec2 uv;\n        void main () {\n            gl_FragColor = color;\n            gl_FragColor.a *= smoothstep(0.01,0.04,1.-length(uv));\n        }\n    ',
+var $justgook$webgl_playground$Playground$Shader$fragImage = {
+	src: '\n        precision mediump float;\n        varying vec2 uv;\n        uniform vec2 uImgSize;\n        uniform sampler2D uImg;\n        uniform float uA;\n        void main () {\n            vec2 pixel = (floor(uv * uImgSize) + 0.5) / uImgSize;\n            gl_FragColor = texture2D(uImg, pixel);\n            gl_FragColor.a *= uA;\n        }\n    ',
 	attributes: {},
-	uniforms: {color: 'color'}
+	uniforms: {uA: 'uA', uImg: 'uImg', uImgSize: 'uImgSize'}
 };
 var $elm_explorations$webgl$WebGL$Mesh1 = F2(
 	function (a, b) {
@@ -9363,85 +9602,6 @@ var $justgook$webgl_playground$Playground$Shader$mesh = $elm_explorations$webgl$
 			aP: A2($elm_explorations$linear_algebra$Math$Vector2$vec2, 1, 1)
 		}
 		]));
-var $elm_explorations$linear_algebra$Math$Vector3$toRecord = _MJS_v3toRecord;
-var $elm_explorations$linear_algebra$Math$Vector4$vec4 = _MJS_v4;
-var $justgook$webgl_playground$Playground$Render$setAlpha = function (c) {
-	return function (c1) {
-		return A3($elm_explorations$linear_algebra$Math$Vector4$vec4, c1.x, c1.y, c1.z);
-	}(
-		$elm_explorations$linear_algebra$Math$Vector3$toRecord(c));
-};
-var $justgook$webgl_playground$Playground$Shader$vertRect = {
-	src: '\n            precision mediump float;\n            attribute vec2 aP;\n            uniform vec4 uT;\n            uniform vec2 uP;\n            varying vec2 uv;\n            void main () {\n                uv = aP;\n                gl_Position = vec4(aP * mat2(uT) + uP, 0., 1.0);\n            }\n        ',
-	attributes: {aP: 'aP'},
-	uniforms: {uP: 'uP', uT: 'uT'}
-};
-var $justgook$webgl_playground$Playground$Render$circle = F4(
-	function (color, uP, uT, opacity) {
-		return A5(
-			$elm_explorations$webgl$WebGL$entityWith,
-			$justgook$webgl_playground$Playground$Render$defaultEntitySettings,
-			$justgook$webgl_playground$Playground$Shader$vertRect,
-			$justgook$webgl_playground$Playground$Shader$fragCircle,
-			$justgook$webgl_playground$Playground$Shader$mesh,
-			{
-				color: A2($justgook$webgl_playground$Playground$Render$setAlpha, color, opacity),
-				uP: uP,
-				uT: uT
-			});
-	});
-var $justgook$webgl_playground$Playground$circle = F2(
-	function (color, radius) {
-		return $justgook$webgl_playground$Playground$Internal$Shape(
-			{
-				a: 0,
-				form: A3(
-					$justgook$webgl_playground$Playground$Internal$Form,
-					radius * 2,
-					radius * 2,
-					$justgook$webgl_playground$Playground$Render$circle(color)),
-				o: 1,
-				sx: 1,
-				sy: 1,
-				x: 0,
-				y: 0
-			});
-	});
-var $elm$core$Basics$modBy = _Basics_modBy;
-var $justgook$webgl_playground$Playground$Extra$scaleX = F2(
-	function (sx, _v0) {
-		var shape = _v0.a;
-		return $justgook$webgl_playground$Playground$Internal$Shape(
-			_Utils_update(
-				shape,
-				{sx: shape.sx * sx}));
-	});
-var $justgook$webgl_playground$Playground$Advanced$custom = F3(
-	function (width, height, render) {
-		return $justgook$webgl_playground$Playground$Internal$Shape(
-			{
-				a: 0,
-				form: A3($justgook$webgl_playground$Playground$Internal$Form, width, height, render),
-				o: 1,
-				sx: 1,
-				sy: 1,
-				x: 0,
-				y: 0
-			});
-	});
-var $justgook$webgl_playground$Playground$Extra$size = function (t) {
-	return function (_v0) {
-		var w = _v0.a;
-		var h = _v0.b;
-		return A2($elm_explorations$linear_algebra$Math$Vector2$vec2, w, h);
-	}(
-		$elm_explorations$webgl$WebGL$Texture$size(t));
-};
-var $justgook$webgl_playground$Playground$Shader$fragImage = {
-	src: '\n        precision mediump float;\n        varying vec2 uv;\n        uniform vec2 uImgSize;\n        uniform sampler2D uImg;\n        uniform float uA;\n        void main () {\n            vec2 pixel = (floor(uv * uImgSize) + 0.5) / uImgSize;\n            gl_FragColor = texture2D(uImg, pixel);\n            gl_FragColor.a *= uA;\n        }\n    ',
-	attributes: {},
-	uniforms: {uA: 'uA', uImg: 'uImg', uImgSize: 'uImgSize'}
-};
 var $justgook$webgl_playground$Playground$Shader$vertSprite = {
 	src: '\n            precision mediump float;\n            attribute vec2 aP;\n            uniform vec4 uT;\n            uniform vec2 uP;\n            varying vec2 uv;\n            uniform vec4 uUV;\n            void main () {\n                vec2 aP_ = aP * .5 + 0.5;\n                uv = uUV.xy + (aP_ * uUV.zw);\n                gl_Position = vec4(aP * mat2(uT) + uP, 0., 1.0);\n            }\n        ',
 	attributes: {aP: 'aP'},
@@ -9491,6 +9651,7 @@ var $justgook$webgl_playground$Playground$Extra$sprite = F4(
 						uv));
 			});
 	});
+var $elm_explorations$linear_algebra$Math$Vector4$vec4 = _MJS_v4;
 var $author$project$Main$fishsprite = F2(
 	function (index, orientation) {
 		return A2(
@@ -9587,128 +9748,95 @@ var $author$project$Main$drawSeahorse = function (sh) {
 					sh.currentSpriteIndex,
 					$author$project$Main$getOrientation(sh)))));
 };
-var $justgook$webgl_playground$Playground$intFromHexChar = function (s) {
-	switch (s.valueOf()) {
-		case '0':
-			return $elm$core$Maybe$Just(0);
-		case '1':
-			return $elm$core$Maybe$Just(1);
-		case '2':
-			return $elm$core$Maybe$Just(2);
-		case '3':
-			return $elm$core$Maybe$Just(3);
-		case '4':
-			return $elm$core$Maybe$Just(4);
-		case '5':
-			return $elm$core$Maybe$Just(5);
-		case '6':
-			return $elm$core$Maybe$Just(6);
-		case '7':
-			return $elm$core$Maybe$Just(7);
-		case '8':
-			return $elm$core$Maybe$Just(8);
-		case '9':
-			return $elm$core$Maybe$Just(9);
-		case 'a':
-			return $elm$core$Maybe$Just(10);
-		case 'b':
-			return $elm$core$Maybe$Just(11);
-		case 'c':
-			return $elm$core$Maybe$Just(12);
-		case 'd':
-			return $elm$core$Maybe$Just(13);
-		case 'e':
-			return $elm$core$Maybe$Just(14);
-		case 'f':
-			return $elm$core$Maybe$Just(15);
-		default:
-			return $elm$core$Maybe$Nothing;
-	}
+var $author$project$Main$bubbleSprite = function (index) {
+	return A4(
+		$justgook$webgl_playground$Playground$Extra$sprite,
+		114,
+		114,
+		'/images/Bubbles.png',
+		A4(
+			$elm_explorations$linear_algebra$Math$Vector4$vec4,
+			A2($elm$core$Basics$modBy, 3, index) / 3,
+			0,
+			0.33,
+			1));
 };
-var $justgook$webgl_playground$Playground$maybeMap6 = F7(
-	function (func, ma, mb, mc, md, me, mf) {
-		if (ma.$ === 'Nothing') {
-			return $elm$core$Maybe$Nothing;
-		} else {
-			var a = ma.a;
-			if (mb.$ === 'Nothing') {
-				return $elm$core$Maybe$Nothing;
-			} else {
-				var b = mb.a;
-				if (mc.$ === 'Nothing') {
-					return $elm$core$Maybe$Nothing;
-				} else {
-					var c = mc.a;
-					if (md.$ === 'Nothing') {
-						return $elm$core$Maybe$Nothing;
-					} else {
-						var d = md.a;
-						if (me.$ === 'Nothing') {
-							return $elm$core$Maybe$Nothing;
-						} else {
-							var e = me.a;
-							if (mf.$ === 'Nothing') {
-								return $elm$core$Maybe$Nothing;
-							} else {
-								var f = mf.a;
-								return $elm$core$Maybe$Just(
-									A6(func, a, b, c, d, e, f));
-							}
-						}
-					}
-				}
-			}
-		}
-	});
-var $elm$core$String$foldr = _String_foldr;
-var $elm$core$String$toList = function (string) {
-	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
+var $author$project$Main$drawBubble = function (b) {
+	return A2(
+		$justgook$webgl_playground$Playground$moveY,
+		$elm_explorations$linear_algebra$Math$Vector2$getY(b.position),
+		A2(
+			$justgook$webgl_playground$Playground$moveX,
+			$elm_explorations$linear_algebra$Math$Vector2$getX(b.position),
+			$author$project$Main$bubbleSprite(b.spriteIndex)));
 };
-var $elm_explorations$linear_algebra$Math$Vector3$vec3 = _MJS_v3;
-var $justgook$webgl_playground$Playground$hexColor2Vec3 = function (str) {
-	var withoutHash = A2($elm$core$String$startsWith, '#', str) ? A2($elm$core$String$dropLeft, 1, str) : str;
-	var _v0 = $elm$core$String$toList(withoutHash);
-	if ((((((_v0.b && _v0.b.b) && _v0.b.b.b) && _v0.b.b.b.b) && _v0.b.b.b.b.b) && _v0.b.b.b.b.b.b) && (!_v0.b.b.b.b.b.b.b)) {
-		var r1 = _v0.a;
-		var _v1 = _v0.b;
-		var r2 = _v1.a;
-		var _v2 = _v1.b;
-		var g1 = _v2.a;
-		var _v3 = _v2.b;
-		var g2 = _v3.a;
-		var _v4 = _v3.b;
-		var b1 = _v4.a;
-		var _v5 = _v4.b;
-		var b2 = _v5.a;
-		return A7(
-			$justgook$webgl_playground$Playground$maybeMap6,
-			F6(
-				function (a, b, c, d, e, f) {
-					return A3($elm_explorations$linear_algebra$Math$Vector3$vec3, ((a * 16) + b) / 255, ((c * 16) + d) / 255, ((e * 16) + f) / 255);
-				}),
-			$justgook$webgl_playground$Playground$intFromHexChar(r1),
-			$justgook$webgl_playground$Playground$intFromHexChar(r2),
-			$justgook$webgl_playground$Playground$intFromHexChar(g1),
-			$justgook$webgl_playground$Playground$intFromHexChar(g2),
-			$justgook$webgl_playground$Playground$intFromHexChar(b1),
-			$justgook$webgl_playground$Playground$intFromHexChar(b2));
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
+var $justgook$webgl_playground$Playground$Internal$Group = function (a) {
+	return {$: 'Group', a: a};
 };
-var $elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
-var $justgook$webgl_playground$Playground$red = A2(
-	$elm$core$Maybe$withDefault,
-	A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 0, 0, 0),
-	$justgook$webgl_playground$Playground$hexColor2Vec3('#cc0000'));
+var $justgook$webgl_playground$Playground$group = function (shapes) {
+	return $justgook$webgl_playground$Playground$Internal$Shape(
+		{
+			a: 0,
+			form: $justgook$webgl_playground$Playground$Internal$Group(shapes),
+			o: 1,
+			sx: 1,
+			sy: 1,
+			x: 0,
+			y: 0
+		});
+};
+var $author$project$Main$seashellSprite = function (index) {
+	return A4(
+		$justgook$webgl_playground$Playground$Extra$sprite,
+		164,
+		105,
+		'/images/Seashell.png',
+		A4(
+			$elm_explorations$linear_algebra$Math$Vector4$vec4,
+			A2($elm$core$Basics$modBy, 3, index) / 3,
+			0,
+			0.33,
+			1));
+};
+var $author$project$Main$drawSeashell = function (ss) {
+	return _Utils_Tuple2(
+		1,
+		$justgook$webgl_playground$Playground$group(
+			A2(
+				$elm$core$List$cons,
+				A2(
+					$justgook$webgl_playground$Playground$moveY,
+					$elm_explorations$linear_algebra$Math$Vector2$getY(ss.position),
+					A2(
+						$justgook$webgl_playground$Playground$moveX,
+						$elm_explorations$linear_algebra$Math$Vector2$getX(ss.position),
+						$author$project$Main$seashellSprite(ss.currentSpriteIndex))),
+				A2($elm$core$List$map, $author$project$Main$drawBubble, ss.bubbles))));
+};
+var $author$project$Main$seaweedSprite = function (index) {
+	return A4(
+		$justgook$webgl_playground$Playground$Extra$sprite,
+		171,
+		185,
+		'/images/SeaweedNew.png',
+		A4(
+			$elm_explorations$linear_algebra$Math$Vector4$vec4,
+			A2($elm$core$Basics$modBy, 4, index) / 4,
+			0,
+			0.25,
+			1));
+};
+var $author$project$Main$drawSeaweed = function (sw) {
+	return _Utils_Tuple2(
+		4,
+		A2(
+			$justgook$webgl_playground$Playground$moveY,
+			$elm_explorations$linear_algebra$Math$Vector2$getY(sw.position),
+			A2(
+				$justgook$webgl_playground$Playground$moveX,
+				$elm_explorations$linear_algebra$Math$Vector2$getX(sw.position),
+				$author$project$Main$seaweedSprite(sw.currentSpriteIndex))));
+};
 var $author$project$Main$drawAgent = function (agent) {
 	switch (agent.$) {
 		case 'BF':
@@ -9718,15 +9846,11 @@ var $author$project$Main$drawAgent = function (agent) {
 			var seahorse = agent.a;
 			return $author$project$Main$drawSeahorse(seahorse);
 		case 'SW':
-			var seaWeed = agent.a;
-			return _Utils_Tuple2(
-				0,
-				A2($justgook$webgl_playground$Playground$circle, $justgook$webgl_playground$Playground$red, 0));
+			var seaweed = agent.a;
+			return $author$project$Main$drawSeaweed(seaweed);
 		default:
-			var bubble = agent.a;
-			return _Utils_Tuple2(
-				0,
-				A2($justgook$webgl_playground$Playground$circle, $justgook$webgl_playground$Playground$red, 0));
+			var seashell = agent.a;
+			return $author$project$Main$drawSeashell(seashell);
 	}
 };
 var $elm$core$Tuple$second = function (_v0) {
