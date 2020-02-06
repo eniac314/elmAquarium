@@ -777,7 +777,7 @@ updateSeashell computer ss =
                             (Random.pair (Random.float 30 130) (Random.int 0 1))
                             seed
                 in
-                [ { position = vec2 newPosX (getY ss.position + 20)
+                [ { position = vec2 (getX ss.position - (164 / 2) + newPosX) (getY ss.position + 20)
                   , spriteIndex = size
                   }
                 ]
